@@ -1,6 +1,7 @@
 import javax.swing.*;
-import java.awt.*;
-import java.util.*;
+import java.awt.*;                 // For GridLayout, BorderLayout, etc.
+import java.util.Arrays;          // For Arrays.asList()
+import java.util.List;            // For List<>
 
 public class CoordinatorGUI extends JFrame {
 
