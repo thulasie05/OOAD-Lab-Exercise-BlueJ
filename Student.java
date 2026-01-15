@@ -1,35 +1,29 @@
+public class Student extends User {
 
-/**
- * Write a description of class Student here.
- *
- * @author (your name)
- * @version (a version number or a date)
- */
-public class Student extends User
-{
-    // instance variables - replace the example below with your own
-    private int x;
+    private String researchTitle;
+    private String abstractText;
+    private String presentationType;
 
-    /**
-     * Constructor for objects of class Student
-     */
-    public Student()
-    {
-        // initialise instance variables
-        x = 0;
-        Session obj = new Session();
-        Submission obj2 = new Submission();
+    public Student(String userId, String name, String email,
+                   String researchTitle, String abstractText, String presentationType) {
+        super(userId, name, email);
+        this.researchTitle = researchTitle;
+        this.abstractText = abstractText;
+        this.presentationType = presentationType;
     }
 
-    /**
-     * An example of a method - replace this comment with your own
-     *
-     * @param  y  a sample parameter for a method
-     * @return    the sum of x and y
-     */
-    public int sampleMethod(int y)
-    {
-        // put your code here
-        return x + y;
+    public boolean register() {
+        return true;
+    }
+
+    public boolean submitPresentation() {
+        return true;
+    }
+
+    public void receiveAward() {
+    }
+
+    public String getPresentationType() {
+        return presentationType;
     }
 }
