@@ -1,121 +1,116 @@
 import java.util.List;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 
 public class Award {
     private String awardId;
     private String awardName;
     private String criteria;
     private Student winner;
-    private String awardType; // "Best Oral", "Best Poster", "People's Choice"
-    private double prizeAmount;
-    private boolean isGenerated;
+    private List<Student> nominees;
+    private Map<String, Integer> votes; // For People's Choice award
     
-    public Award(String awardId, String awardName, String criteria, String awardType) {
+    // Award types as per requirements
+    public static final String BEST_ORAL = "Best Oral Presentation";
+    public static final String BEST_POSTER = "Best Poster Presentation";
+    public static final String PEOPLES_CHOICE = "People's Choice Award";
+    
+    public Award(String awardId, String awardName, String criteria) {
         this.awardId = awardId;
         this.awardName = awardName;
         this.criteria = criteria;
-        this.awardType = awardType;
-        this.prizeAmount = 0.0;
-        this.isGenerated = false;
+        this.nominees = new ArrayList<>();
+        this.votes = new HashMap<>();
     }
     
-    public Award(String awardId, String awardName, String criteria, String awardType, double prizeAmount) {
-        this(awardId, awardName, criteria, awardType);
-        this.prizeAmount = prizeAmount;
-    }
-    
-    // Calculate winner based on evaluation scores
+    // Calculate winner based on evaluation scores (for Best Oral/Poster)
     public void calculateWinner(List<Evaluation> evaluations) {
+        if (evaluations == null || evaluations.isEmpty()) {
+            winner = null;
+            return;
+        }
+        
         double maxScore = -1;
-        Student potentialWinner = null;
+        Evaluation bestEvaluation = null;
         
         for (Evaluation e : evaluations) {
-            // Only consider students with matching presentation type for specific awards
-            if (awardType.equals("Best Oral") && 
-                !e.getStudent().getPresentationType().equalsIgnoreCase("Oral")) {
-                continue;
-            }
-            if (awardType.equals("Best Poster") && 
-                !e.getStudent().getPresentationType().equalsIgnoreCase("Poster")) {
-                continue;
+            Student student = e.getStudent();
+            double score = e.calculateTotalScore();
+            
+            // Filter by presentation type for specific awards
+            if (awardName.equals(BEST_ORAL)) {
+                if (!"Oral".equalsIgnoreCase(student.getPresentationType())) {
+                    continue; // Skip non-oral presentations for Best Oral award
+                }
+            } else if (awardName.equals(BEST_POSTER)) {
+                if (!"Poster".equalsIgnoreCase(student.getPresentationType())) {
+                    continue; // Skip non-poster presentations for Best Poster award
+                }
+            } else if (awardName.equals(PEOPLES_CHOICE)) {
+                continue; // People's Choice is calculated separately
             }
             
-            double totalScore = e.calculateTotalScore();
-            if (totalScore > maxScore) {
-                maxScore = totalScore;
-                potentialWinner = e.getStudent();
+            if (score > maxScore) {
+                maxScore = score;
+                bestEvaluation = e;
             }
         }
         
-        this.winner = potentialWinner;
-        this.isGenerated = true;
+        if (bestEvaluation != null) {
+            winner = bestEvaluation.getStudent();
+            System.out.println(awardName + " awarded to " + winner.getName() 
+                + " with score: " + maxScore);
+        }
     }
     
-    // Calculate People's Choice Award (based on votes/ratings)
-    public void calculatePeoplesChoice(List<Evaluation> evaluations) {
-        double maxVotes = -1;
-        Student potentialWinner = null;
+    // For People's Choice award - voting system
+    public void addVote(String voterId, Student student) {
+        if (!nominees.contains(student)) {
+            nominees.add(student);
+        }
+        votes.put(voterId, nominees.indexOf(student));
+    }
+    
+    // Calculate People's Choice winner (most votes)
+    public void calculatePeoplesChoiceWinner() {
+        if (votes.isEmpty() || nominees.isEmpty()) {
+            winner = null;
+            return;
+        }
         
-        for (Evaluation e : evaluations) {
-            // Assuming Evaluation has a getVotes() or getRating() method
-            // For demo, we'll use a combination of scores
-            double popularityScore = e.calculateTotalScore() * 0.7 + 
-                                   (e.getComments() != null ? e.getComments().length() * 0.01 : 0);
-            
-            if (popularityScore > maxVotes) {
-                maxVotes = popularityScore;
-                potentialWinner = e.getStudent();
+        // Count votes for each nominee
+        Map<Integer, Integer> voteCount = new HashMap<>();
+        for (Integer nomineeIndex : votes.values()) {
+            voteCount.put(nomineeIndex, voteCount.getOrDefault(nomineeIndex, 0) + 1);
+        }
+        
+        // Find nominee with most votes
+        int maxVotes = -1;
+        int winnerIndex = -1;
+        
+        for (Map.Entry<Integer, Integer> entry : voteCount.entrySet()) {
+            if (entry.getValue() > maxVotes) {
+                maxVotes = entry.getValue();
+                winnerIndex = entry.getKey();
             }
         }
         
-        this.winner = potentialWinner;
-        this.isGenerated = true;
-    }
-    
-    // Validate if winner meets criteria
-    public boolean validateCriteria() {
-        if (winner == null) return false;
-        
-        switch (awardType) {
-            case "Best Oral":
-                return winner.getPresentationType().equalsIgnoreCase("Oral") &&
-                       winner.hasUploadedPresentation();
-            case "Best Poster":
-                return winner.getPresentationType().equalsIgnoreCase("Poster") &&
-                       winner.hasUploadedPresentation();
-            case "People's Choice":
-                return true; // All students eligible
-            default:
-                return false;
+        if (winnerIndex >= 0 && winnerIndex < nominees.size()) {
+            winner = nominees.get(winnerIndex);
+            System.out.println(PEOPLES_CHOICE + " awarded to " + winner.getName() 
+                + " with " + maxVotes + " votes");
         }
     }
     
-    // Generate award certificate/agenda text
-    public String generateAwardAgenda() {
-        StringBuilder agenda = new StringBuilder();
-        agenda.append("=== AWARD CERTIFICATE ===\n");
-        agenda.append("Award ID: ").append(awardId).append("\n");
-        agenda.append("Award Name: ").append(awardName).append("\n");
-        agenda.append("Type: ").append(awardType).append("\n");
-        agenda.append("Criteria: ").append(criteria).append("\n");
-        
-        if (winner != null) {
-            agenda.append("\nAWARDED TO:\n");
-            agenda.append("Name: ").append(winner.getName()).append("\n");
-            agenda.append("Student ID: ").append(winner.getStudentId()).append("\n");
-            agenda.append("Research Topic: ").append(winner.getResearchTopic()).append("\n");
-            agenda.append("Presentation Type: ").append(winner.getPresentationType()).append("\n");
+    // Add a student to nomination list
+    public void addNominee(Student student) {
+        if (!nominees.contains(student)) {
+            nominees.add(student);
         }
-        
-        if (prizeAmount > 0) {
-            agenda.append("\nPrize Amount: RM").append(String.format("%.2f", prizeAmount)).append("\n");
-        }
-        
-        agenda.append("\nGenerated on: ").append(new java.util.Date()).append("\n");
-        return agenda.toString();
     }
     
-    // Getters and Setters
+    // Getters
     public Student getWinner() {
         return winner;
     }
@@ -124,27 +119,41 @@ public class Award {
         return awardName;
     }
     
-    public String getAwardType() {
-        return awardType;
-    }
-    
     public String getCriteria() {
         return criteria;
     }
     
-    public double getPrizeAmount() {
-        return prizeAmount;
-    }
-    
-    public void setPrizeAmount(double prizeAmount) {
-        this.prizeAmount = prizeAmount;
-    }
-    
-    public boolean isGenerated() {
-        return isGenerated;
-    }
-    
     public String getAwardId() {
         return awardId;
+    }
+    
+    public List<Student> getNominees() {
+        return new ArrayList<>(nominees);
+    }
+    
+    public int getVoteCount() {
+        return votes.size();
+    }
+    
+    // Validation
+    public boolean validateCriteria() {
+        return criteria != null && !criteria.trim().isEmpty();
+    }
+    
+    public boolean isAwardAssigned() {
+        return winner != null;
+    }
+    
+    @Override
+    public String toString() {
+        return awardName + " (" + criteria + ")" 
+                + (winner != null ? " - Winner: " + winner.getName() : " - No winner assigned");
+    }
+    
+    // Check if award matches requirements (Best Oral, Best Poster, People's Choice)
+    public boolean isStandardAward() {
+        return awardName.equals(BEST_ORAL) || 
+               awardName.equals(BEST_POSTER) || 
+               awardName.equals(PEOPLES_CHOICE);
     }
 }
