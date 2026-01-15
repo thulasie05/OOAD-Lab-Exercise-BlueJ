@@ -1,36 +1,29 @@
+import java.util.ArrayList;
+import java.util.List;
 
-/**
- * Write a description of class Coordinator here.
- *
- * @author (your name)
- * @version (a version number or a date)
- */
-public class Coordinator extends User
-{
-    // instance variables - replace the example below with your own
-    private int x;
+public class Coordinator extends User {
 
-    /**
-     * Constructor for objects of class Coordinator
-     */
-    public Coordinator()
-    {
-        // initialise instance variables
-        x = 0;
-        Session obj = new Session();
-        Report obj2 = new Report();
-        Award obj3 = new Award();
+    private List<Session> managedSessions;
+
+    public Coordinator(String userId, String name, String email) {
+        super(userId, name, email);
+        managedSessions = new ArrayList<>();
     }
 
-    /**
-     * An example of a method - replace this comment with your own
-     *
-     * @param  y  a sample parameter for a method
-     * @return    the sum of x and y
-     */
-    public int sampleMethod(int y)
-    {
-        // put your code here
-        return x + y;
+    public void createSession(Session s) {
+        managedSessions.add(s);
+    }
+
+    public void assignUsers() {
+    }
+
+    public Report generateReport(List<Evaluation> evaluations, List<Award> awards) {
+        return new Report("R001", "Final Seminar Report", evaluations, awards);
+    }
+
+    public void assignAward() {
+    }
+
+    public void generateSchedule() {
     }
 }
