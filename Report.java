@@ -5,257 +5,297 @@ import java.text.SimpleDateFormat;
 
 public class Report {
     private String reportId;
-    private String reportType; // "Evaluation", "Award", "Summary", "Attendance"
+    private String reportType;
     private Date generateDate;
     private List<Evaluation> evaluations;
     private List<Award> awards;
-    private List<Student> participants;
-    private String sessionInfo;
-    private String coordinatorNotes;
+    
+    // Report types as per requirements
+    public static final String EVALUATION_SUMMARY = "Evaluation Summary Report";
+    public static final String AWARD_SUMMARY = "Award Summary Report";
+    public static final String SEMINAR_FINAL = "Final Seminar Report";
+    public static final String SCHEDULE_REPORT = "Seminar Schedule";
+    public static final String PARTICIPANT_LIST = "Participant List";
     
     public Report(String reportId, String reportType,
                   List<Evaluation> evaluations, List<Award> awards) {
         this.reportId = reportId;
         this.reportType = reportType;
-        this.evaluations = evaluations;
-        this.awards = awards;
+        this.evaluations = evaluations != null ? new ArrayList<>(evaluations) : new ArrayList<>();
+        this.awards = awards != null ? new ArrayList<>(awards) : new ArrayList<>();
         this.generateDate = new Date();
-        this.participants = new ArrayList<>();
-        this.coordinatorNotes = "";
-    }
-    
-    public Report(String reportId, String reportType,
-                  List<Evaluation> evaluations, List<Award> awards,
-                  List<Student> participants, String sessionInfo) {
-        this(reportId, reportType, evaluations, awards);
-        this.participants = participants;
-        this.sessionInfo = sessionInfo;
     }
     
     // Generate comprehensive report based on type
     public String generate() {
-        SimpleDateFormat sdf = new SimpleDateFormat("dd-MM-yyyy HH:mm:ss");
-        StringBuilder report = new StringBuilder();
+        StringBuilder result = new StringBuilder();
         
-        report.append("=== SEMINAR MANAGEMENT SYSTEM REPORT ===\n");
-        report.append("Report ID: ").append(reportId).append("\n");
-        report.append("Report Type: ").append(reportType).append("\n");
-        report.append("Generated Date: ").append(sdf.format(generateDate)).append("\n");
-        report.append("=========================================\n\n");
+        // Header with timestamp
+        SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy HH:mm");
+        result.append("=== ").append(reportType.toUpperCase()).append(" ===\n");
+        result.append("Generated: ").append(sdf.format(generateDate)).append("\n");
+        result.append("Report ID: ").append(reportId).append("\n");
+        result.append("=========================================\n\n");
         
-        switch (reportType) {
-            case "Evaluation":
-                generateEvaluationReport(report);
+        // Generate different sections based on report type
+        switch(reportType) {
+            case EVALUATION_SUMMARY:
+                result.append(generateEvaluationSection());
                 break;
-            case "Award":
-                generateAwardReport(report);
+            case AWARD_SUMMARY:
+                result.append(generateAwardSection());
                 break;
-            case "Summary":
-                generateSummaryReport(report);
+            case SEMINAR_FINAL:
+                result.append(generateFinalReport());
                 break;
-            case "Attendance":
-                generateAttendanceReport(report);
+            case SCHEDULE_REPORT:
+                result.append(generateScheduleSection());
+                break;
+            case PARTICIPANT_LIST:
+                result.append(generateParticipantSection());
                 break;
             default:
-                generateComprehensiveReport(report);
+                result.append(generateEvaluationSection());
+                result.append("\n");
+                result.append(generateAwardSection());
         }
         
-        if (!coordinatorNotes.isEmpty()) {
-            report.append("\n\nCoordinator Notes:\n");
-            report.append(coordinatorNotes).append("\n");
-        }
+        // Add analytics/statistics
+        result.append(generateStatistics());
         
-        report.append("\n=== END OF REPORT ===\n");
-        return report.toString();
+        return result.toString();
     }
     
-    private void generateEvaluationReport(StringBuilder report) {
-        report.append("EVALUATION RESULTS\n");
-        report.append("==================\n");
+    private String generateEvaluationSection() {
+        StringBuilder section = new StringBuilder();
+        section.append("--- EVALUATION RESULTS ---\n");
         
-        int totalEvaluations = evaluations.size();
-        double totalScore = 0;
+        if (evaluations.isEmpty()) {
+            section.append("No evaluations available.\n\n");
+            return section.toString();
+        }
+        
+        // Table header
+        section.append(String.format("%-25s %-15s %-15s %-10s %-30s\n", 
+            "Student", "Presentation", "Rubric", "Score", "Comments"));
+        section.append("------------------------------------------------------------------------------------------------\n");
         
         for (Evaluation e : evaluations) {
             Student s = e.getStudent();
-            double score = e.calculateTotalScore();
-            totalScore += score;
-            
-            report.append("\nStudent: ").append(s.getName())
-                  .append(" (").append(s.getStudentId()).append(")\n");
-            report.append("Presentation: ").append(s.getPresentationType())
-                  .append(" - ").append(s.getResearchTopic()).append("\n");
-            report.append("Total Score: ").append(String.format("%.2f", score)).append("/100\n");
-            report.append("Comments: ").append(e.getComments() != null ? e.getComments() : "No comments").append("\n");
-            report.append("Evaluated by: ").append(e.getEvaluator() != null ? e.getEvaluator().getName() : "N/A").append("\n");
-            report.append("----------------------------------------\n");
-        }
-        
-        report.append("\nSUMMARY STATISTICS:\n");
-        report.append("Total Evaluations: ").append(totalEvaluations).append("\n");
-        if (totalEvaluations > 0) {
-            report.append("Average Score: ").append(String.format("%.2f", totalScore / totalEvaluations)).append("\n");
-        }
-    }
-    
-    private void generateAwardReport(StringBuilder report) {
-        report.append("AWARD CEREMONY RESULTS\n");
-        report.append("======================\n\n");
-        
-        int awardsGenerated = 0;
-        for (Award a : awards) {
-            if (a.isGenerated() && a.getWinner() != null) {
-                awardsGenerated++;
-                report.append(a.generateAwardAgenda()).append("\n");
-                report.append("----------------------------------------\n\n");
+            String comments = e.getComments();
+            if (comments.length() > 25) {
+                comments = comments.substring(0, 22) + "...";
             }
+            
+            section.append(String.format("%-25s %-15s %-15s %-10.1f %-30s\n",
+                s.getName(),
+                s.getPresentationType(),
+                e.getRubricType(),
+                e.calculateTotalScore(),
+                comments));
         }
+        section.append("\n");
         
-        report.append("Total Awards Generated: ").append(awardsGenerated).append("/").append(awards.size()).append("\n");
+        return section.toString();
     }
     
-    private void generateSummaryReport(StringBuilder report) {
-        report.append("SEMINAR SUMMARY REPORT\n");
-        report.append("======================\n\n");
+    private String generateAwardSection() {
+        StringBuilder section = new StringBuilder();
+        section.append("--- AWARD WINNERS ---\n");
         
-        // Participant Statistics
-        report.append("PARTICIPANT STATISTICS:\n");
+        if (awards.isEmpty()) {
+            section.append("No awards available.\n\n");
+            return section.toString();
+        }
+        
+        int awardCount = 0;
+        for (Award a : awards) {
+            awardCount++;
+            section.append(awardCount).append(". ").append(a.getAwardName()).append("\n");
+            section.append("   Criteria: ").append(a.getCriteria()).append("\n");
+            
+            if (a.getWinner() != null) {
+                section.append("   🏆 Winner: ").append(a.getWinner().getName()).append("\n");
+                
+                // Find winner's score if available
+                for (Evaluation e : evaluations) {
+                    if (e.getStudent().equals(a.getWinner())) {
+                        section.append("   Score: ").append(e.calculateTotalScore()).append("\n");
+                        break;
+                    }
+                }
+            } else {
+                section.append("   Status: Not yet assigned\n");
+            }
+            
+            if (a.getAwardName().equals(Award.PEOPLES_CHOICE)) {
+                section.append("   Total Votes: ").append(a.getVoteCount()).append("\n");
+                section.append("   Nominees: ");
+                for (Student nominee : a.getNominees()) {
+                    section.append(nominee.getName()).append(", ");
+                }
+                if (!a.getNominees().isEmpty()) {
+                    section.delete(section.length()-2, section.length()); // Remove last comma
+                }
+                section.append("\n");
+            }
+            section.append("\n");
+        }
+        
+        return section.toString();
+    }
+    
+    private String generateFinalReport() {
+        StringBuilder section = new StringBuilder();
+        section.append("--- FINAL SEMINAR REPORT ---\n\n");
+        section.append(generateEvaluationSection());
+        section.append(generateAwardSection());
+        section.append("--- SEMINAR OVERVIEW ---\n");
+        section.append("This report summarizes the Postgraduate Academic Research Seminar.\n");
+        section.append("The seminar included presentations from Master's and PhD students,\n");
+        section.append("with evaluations conducted by faculty panel members.\n\n");
+        
+        return section.toString();
+    }
+    
+    private String generateScheduleSection() {
+        StringBuilder section = new StringBuilder();
+        section.append("--- SEMINAR SCHEDULE ---\n");
+        section.append("Date: To be announced\n");
+        section.append("Venue: FCI Seminar Hall\n");
+        section.append("Session Types: Oral Presentations, Poster Sessions\n");
+        section.append("Time: 9:00 AM - 5:00 PM\n\n");
+        return section.toString();
+    }
+    
+    private String generateParticipantSection() {
+        StringBuilder section = new StringBuilder();
+        section.append("--- PARTICIPANT LIST ---\n");
+        
+        if (evaluations.isEmpty()) {
+            section.append("No participants.\n");
+            return section.toString();
+        }
+        
         int oralCount = 0, posterCount = 0;
-        for (Student s : participants) {
-            if (s.getPresentationType().equalsIgnoreCase("Oral")) {
+        for (Evaluation e : evaluations) {
+            Student s = e.getStudent();
+            section.append("• ").append(s.getName());
+            section.append(" (").append(s.getPresentationType()).append(")\n");
+            
+            if ("Oral".equalsIgnoreCase(s.getPresentationType())) {
                 oralCount++;
-            } else if (s.getPresentationType().equalsIgnoreCase("Poster")) {
+            } else if ("Poster".equalsIgnoreCase(s.getPresentationType())) {
                 posterCount++;
             }
         }
-        report.append("Total Participants: ").append(participants.size()).append("\n");
-        report.append("Oral Presentations: ").append(oralCount).append("\n");
-        report.append("Poster Presentations: ").append(posterCount).append("\n\n");
         
-        // Evaluation Statistics
+        section.append("\nTotal Participants: ").append(evaluations.size()).append("\n");
+        section.append("Oral Presentations: ").append(oralCount).append("\n");
+        section.append("Poster Presentations: ").append(posterCount).append("\n");
+        
+        return section.toString();
+    }
+    
+    private String generateStatistics() {
+        StringBuilder stats = new StringBuilder();
+        stats.append("--- STATISTICS ---\n");
+        
         if (!evaluations.isEmpty()) {
-            report.append("EVALUATION STATISTICS:\n");
-            double minScore = 100, maxScore = 0, totalScore = 0;
+            double totalScore = 0;
+            double maxScore = -1;
+            double minScore = 101;
+            Student topStudent = null;
+            
             for (Evaluation e : evaluations) {
                 double score = e.calculateTotalScore();
-                if (score < minScore) minScore = score;
-                if (score > maxScore) maxScore = score;
                 totalScore += score;
-            }
-            report.append("Total Evaluations: ").append(evaluations.size()).append("\n");
-            report.append("Highest Score: ").append(String.format("%.2f", maxScore)).append("\n");
-            report.append("Lowest Score: ").append(String.format("%.2f", minScore)).append("\n");
-            report.append("Average Score: ").append(String.format("%.2f", totalScore / evaluations.size())).append("\n\n");
-        }
-        
-        // Award Summary
-        if (!awards.isEmpty()) {
-            report.append("AWARD SUMMARY:\n");
-            for (Award a : awards) {
-                report.append("- ").append(a.getAwardName());
-                if (a.getWinner() != null) {
-                    report.append(": ").append(a.getWinner().getName());
-                } else {
-                    report.append(": Not assigned");
+                
+                if (score > maxScore) {
+                    maxScore = score;
+                    topStudent = e.getStudent();
                 }
-                report.append("\n");
+                if (score < minScore) {
+                    minScore = score;
+                }
             }
-        }
-    }
-    
-    private void generateAttendanceReport(StringBuilder report) {
-        report.append("ATTENDANCE REPORT\n");
-        report.append("=================\n\n");
-        report.append("Session Info: ").append(sessionInfo != null ? sessionInfo : "N/A").append("\n\n");
-        
-        report.append("PARTICIPANTS LIST:\n");
-        for (Student s : participants) {
-            report.append("- ").append(s.getName())
-                  .append(" (").append(s.getStudentId()).append(")")
-                  .append(" - ").append(s.getPresentationType()).append("\n");
-        }
-    }
-    
-    private void generateComprehensiveReport(StringBuilder report) {
-        generateSummaryReport(report);
-        report.append("\n\n");
-        generateEvaluationReport(report);
-        report.append("\n\n");
-        generateAwardReport(report);
-    }
-    
-    // Export functionality (placeholder for actual PDF generation)
-    public void exportPDF(String filePath) {
-        // In a real implementation, you would use a PDF library like iText
-        // For now, we'll just save the report as text
-        try {
-            java.nio.file.Files.write(
-                java.nio.file.Paths.get(filePath),
-                generate().getBytes()
-            );
-            System.out.println("Report exported to: " + filePath);
-        } catch (Exception e) {
-            System.err.println("Error exporting report: " + e.getMessage());
-        }
-    }
-    
-    public void exportCSV(String filePath) {
-        try {
-            StringBuilder csv = new StringBuilder();
-            csv.append("Student Name,Student ID,Presentation Type,Research Topic,Score,Comments\n");
             
+            double averageScore = totalScore / evaluations.size();
+            int awardsAssigned = 0;
+            for (Award a : awards) {
+                if (a.isAwardAssigned()) awardsAssigned++;
+            }
+            
+            stats.append("Total Evaluations: ").append(evaluations.size()).append("\n");
+            stats.append(String.format("Average Score: %.2f/100\n", averageScore));
+            stats.append(String.format("Highest Score: %.1f (%s)\n", maxScore, 
+                topStudent != null ? topStudent.getName() : "N/A"));
+            stats.append(String.format("Lowest Score: %.1f\n", minScore));
+            stats.append("Total Awards: ").append(awards.size()).append("\n");
+            stats.append("Awards Assigned: ").append(awardsAssigned).append("\n");
+            
+            // Calculate distribution by presentation type
+            int oralCount = 0, posterCount = 0;
             for (Evaluation e : evaluations) {
-                Student s = e.getStudent();
-                csv.append("\"").append(s.getName()).append("\",");
-                csv.append("\"").append(s.getStudentId()).append("\",");
-                csv.append("\"").append(s.getPresentationType()).append("\",");
-                csv.append("\"").append(s.getResearchTopic()).append("\",");
-                csv.append(e.calculateTotalScore()).append(",");
-                csv.append("\"").append(e.getComments() != null ? e.getComments().replace("\"", "\"\"") : "").append("\"\n");
+                if ("Oral".equalsIgnoreCase(e.getStudent().getPresentationType())) {
+                    oralCount++;
+                } else {
+                    posterCount++;
+                }
+            }
+            stats.append("Oral Presentations: ").append(oralCount).append("\n");
+            stats.append("Poster Presentations: ").append(posterCount).append("\n");
+        } else {
+            stats.append("No evaluation data available.\n");
+        }
+        
+        return stats.toString();
+    }
+    
+    // Generate CSV format for export (simple version)
+    public String generateCSV() {
+        StringBuilder csv = new StringBuilder();
+        csv.append("Student,PresentationType,Score,Award\n");
+        
+        for (Evaluation e : evaluations) {
+            Student s = e.getStudent();
+            String awardInfo = "None";
+            
+            // Check if student won any award
+            for (Award a : awards) {
+                if (a.getWinner() != null && a.getWinner().equals(s)) {
+                    awardInfo = a.getAwardName();
+                    break;
+                }
             }
             
-            java.nio.file.Files.write(
-                java.nio.file.Paths.get(filePath),
-                csv.toString().getBytes()
-            );
-            System.out.println("CSV exported to: " + filePath);
-        } catch (Exception e) {
-            System.err.println("Error exporting CSV: " + e.getMessage());
+            csv.append(s.getName()).append(",")
+               .append(s.getPresentationType()).append(",")
+               .append(e.calculateTotalScore()).append(",")
+               .append(awardInfo).append("\n");
         }
+        
+        return csv.toString();
     }
     
-    // Data analytics methods
-    public double calculateAverageScore() {
-        if (evaluations.isEmpty()) return 0;
-        double total = 0;
-        for (Evaluation e : evaluations) {
-            total += e.calculateTotalScore();
-        }
-        return total / evaluations.size();
+    // Simple export methods (stubs for requirements)
+    public void exportPDF() {
+        System.out.println("Exporting report as PDF: " + reportType);
+        // In a real system, this would use a PDF library
     }
     
-    public Student getTopPerformer() {
-        if (evaluations.isEmpty()) return null;
-        Evaluation topEval = evaluations.get(0);
-        for (Evaluation e : evaluations) {
-            if (e.calculateTotalScore() > topEval.calculateTotalScore()) {
-                topEval = e;
-            }
-        }
-        return topEval.getStudent();
+    public void exportCSV() {
+        System.out.println("Exporting report as CSV: " + reportType);
+        System.out.println(generateCSV());
     }
     
-    // Getters and Setters
+    // Getters
     public List<Award> getAwards() {
-        return awards;
+        return new ArrayList<>(awards);
     }
     
     public List<Evaluation> getEvaluations() {
-        return evaluations;
-    }
-    
-    public String getReportId() {
-        return reportId;
+        return new ArrayList<>(evaluations);
     }
     
     public String getReportType() {
@@ -266,15 +306,9 @@ public class Report {
         return generateDate;
     }
     
-    public void setCoordinatorNotes(String notes) {
-        this.coordinatorNotes = notes;
-    }
-    
-    public void setSessionInfo(String sessionInfo) {
-        this.sessionInfo = sessionInfo;
-    }
-    
-    public void setParticipants(List<Student> participants) {
-        this.participants = participants;
+    @Override
+    public String toString() {
+        return reportType + " (ID: " + reportId + ", Generated: " 
+                + new SimpleDateFormat("dd/MM/yyyy").format(generateDate) + ")";
     }
 }
