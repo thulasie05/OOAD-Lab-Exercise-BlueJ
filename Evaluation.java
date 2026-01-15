@@ -1,34 +1,31 @@
+public class Evaluation {
+    private String evaluationId;
+    private String rubricType;
+    private int score;
+    private String comment;
+    private Student student;
 
-/**
- * Write a description of class Evaluation here.
- *
- * @author (your name)
- * @version (a version number or a date)
- */
-public class Evaluation
-{
-    // instance variables - replace the example below with your own
-    private int x;
-
-    /**
-     * Constructor for objects of class Evaluation
-     */
-    public Evaluation()
-    {
-        // initialise instance variables
-        x = 0;
-        Student obj = new Student();
+    public Evaluation(String evaluationId, String rubricType, int score,
+                      String comment, Student student) {
+        this.evaluationId = evaluationId;
+        this.rubricType = rubricType;
+        this.score = score;
+        this.comment = comment;
+        this.student = student;
     }
 
-    /**
-     * An example of a method - replace this comment with your own
-     *
-     * @param  y  a sample parameter for a method
-     * @return    the sum of x and y
-     */
-    public int sampleMethod(int y)
-    {
-        // put your code here
-        return x + y;
+    public void recordEvaluation() {
+    }
+
+    public void addComment(String comment) {
+        this.comment = comment;
+    }
+
+    public double calculateTotalScore() {
+        return score;
+    }
+
+    public Student getStudent() {
+        return student;
     }
 }
