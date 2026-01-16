@@ -23,9 +23,27 @@ public class StudentGUI extends JFrame {
                 JOptionPane.showMessageDialog(this,
                         "Registration submitted (demo)"));
 
-        btnUpload.addActionListener(e ->
-                JOptionPane.showMessageDialog(this,
-                        "Presentation uploaded (demo)"));
+        //IMPLEMENTING UPLOAD LOGIC
+        btnUpload.addActionListener(e -> {
+            JFileChooser fileChooser = new JFileChooser();
+            fileChooser.setDialogTitle("Select Presentation File");
+            int result = fileChooser.showOpenDialog(this);
+
+            if (result == JFileChooser.APPROVE_OPTION) {
+                String filePath = fileChooser.getSelectedFile().getAbsolutePath();
+                
+                // For demo purposes, we create a temporary student instance
+                // In a real app, you'd use the logged-in student's object
+                Student currentStudent = new Student("S-001", "Varya", "varya@univ.edu", 
+                                                    "AI Research", "Abstract...", "Oral");
+
+                boolean success = currentStudent.submitPresentation(filePath);
+                
+                if (success) {
+                    JOptionPane.showMessageDialog(this, "File Uploaded Successfully!\nPath: " + filePath);
+                }
+            }
+        });
 
         btnViewAward.addActionListener(e ->
                 JOptionPane.showMessageDialog(this,
