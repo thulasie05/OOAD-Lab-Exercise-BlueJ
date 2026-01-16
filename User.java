@@ -18,7 +18,7 @@ public class User {
     public void logout() {
     }
 
-    public String getName() {
-        return name;
-    }
+    public String getUserId() { return userId; }
+    public String getName() { return name; }
+    public String getEmail() { return email; }
 }
