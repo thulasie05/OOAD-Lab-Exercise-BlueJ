@@ -16,7 +16,18 @@ public class Student extends User {
         return true;
     }
 
-    public boolean submitPresentation() {
+    public boolean submitPresentation(String filePath) {
+        if (filePath == null || filePath.isEmpty()) {
+            return false;
+        }
+        
+        // Create a new submission record
+        String subId = "SUB-" + System.currentTimeMillis();
+        Submission newSubmission = new Submission(subId, filePath);
+        
+        // Execute the record function
+        newSubmission.recordSubmission();
+            
         return true;
     }
 
